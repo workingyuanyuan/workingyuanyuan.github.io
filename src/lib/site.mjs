@@ -100,8 +100,8 @@ export const SITES = [
 		llms: { en: '/github-repositories/llms.txt', 'zh-TW': '/github-repositories/zh-tw/llms.txt' },
 		languages: ['English', '繁體中文'],
 		about: {
-			en: `What each public GitHub repository of ${GITHUB_USER} is, how to install and use it, and what to watch out for`,
-			'zh-TW': `${GITHUB_USER} 的每個公開 GitHub 專案是什麼、如何安裝與使用、要注意什麼`,
+			en: `What each public GitHub repository of ${NAME} is, how to install and use it, and what to watch out for`,
+			'zh-TW': `${NAME} 的每個公開 GitHub 專案是什麼、如何安裝與使用、要注意什麼`,
 		},
 	},
 	{
