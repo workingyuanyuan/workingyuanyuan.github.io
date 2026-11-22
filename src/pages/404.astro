@@ -1,0 +1,34 @@
+---
+// A wrong address is not a dead end: each language's home page and list of sites, and
+// where the repository pages went.
+import Head from '../components/Head.astro';
+import '../styles/site.css';
+import { LOCALES, TEXT, MOVED_TO, homePath, llmsPath } from '../lib/site.mjs';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<Head title="404 | yuanaruru"><meta name="robots" content="noindex" /></Head>
+	</head>
+	<body>
+		<main>
+			<h1>404</h1>
+			<p class="lead">{TEXT.en.notFound}. <span lang="zh-TW">{TEXT['zh-TW'].notFound}。</span></p>
+			<ul class="sites" role="list">
+				{
+					LOCALES.map((l) => (
+						<li lang={l.lang}>
+							{l.label}: <a href={homePath(l)}>{TEXT[l.lang].home}</a>, <a href={llmsPath(l)}>{TEXT[l.lang].siteList}</a>
+						</li>
+					))
+				}
+			</ul>
+			<p>
+				The pages about GitHub repositories moved from <code>/repos/</code> to <a href={MOVED_TO + '/'}>{MOVED_TO}/</a>.
+				<span lang="zh-TW">介紹 GitHub 專案的頁面已從 <code>/repos/</code> 搬到 <a href={MOVED_TO + '/zh-tw/'}>{MOVED_TO}/zh-tw/</a>。</span>
+			</p>
+			<p>Paths are case-sensitive: <code>/Kage/</code>, not <code>/kage/</code>. <span lang="zh-TW">路徑區分大小寫。</span></p>
+		</main>
+	</body>
+</html>

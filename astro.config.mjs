@@ -1,67 +1,22 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
-import starlightLinksValidator from 'starlight-links-validator';
-import { sitemapOptions } from './src/lib/sitemap.mjs';
-import { SITE, GITHUB_USER, DESCRIPTION } from './src/lib/site.mjs';
+import { SITE, LOCALES, VERIFIED, homePath } from './src/lib/site.mjs';
+
+/** The sitemap holds the home page in each language and nothing else. */
+const pages = new Set(LOCALES.map((l) => SITE + homePath(l)));
 
 export default defineConfig({
 	site: SITE,
 	trailingSlash: 'always',
 	integrations: [
-		// Added here so that it takes options; Starlight then leaves its own copy out.
-		sitemap(sitemapOptions()),
-		starlight({
-			title: 'workingyuanyuan',
-			description: DESCRIPTION,
-			// Google Search Console ownership of the domain (URL-prefix property). Keep it:
-			// removing it unverifies the property. Bing imports its access from Search Console.
-			head: [
-				{
-					tag: 'meta',
-					attrs: { name: 'google-site-verification', content: 'HAmujzQWC-r7ONB0_ef91o4cFOUJXnQKzi0t5F8uxR4' },
-				},
-			],
-			defaultLocale: 'root',
-			locales: {
-				root: { label: 'English', lang: 'en' },
-				'zh-tw': { label: '繁體中文', lang: 'zh-TW' },
+		sitemap({
+			filter: (page) => pages.has(page),
+			i18n: {
+				defaultLocale: 'root',
+				locales: Object.fromEntries(LOCALES.map((l) => [l.dir || 'root', l.lang])),
 			},
-			social: [{ icon: 'github', label: 'GitHub', href: `https://github.com/${GITHUB_USER}` }],
-			sidebar: [
-				{
-					label: 'Repositories',
-					translations: { 'zh-TW': '專案' },
-					items: [{ autogenerate: { directory: 'repos' } }],
-				},
-			],
-			customCss: ['./src/styles/tui.css'],
-			components: {
-				// Three overrides: the nav hints in the header, the answer and page notes around
-				// the body, and one-click theme buttons.
-				SiteTitle: './src/components/SiteTitle.astro',
-				MarkdownContent: './src/components/MarkdownContent.astro',
-				ThemeSelect: './src/components/ThemeSelect.astro',
-			},
-			routeMiddleware: './src/routeData.ts',
-			credits: false,
-			pagination: false,
-			expressiveCode: {
-				themes: ['vesper', 'vitesse-light'],
-				// `patch` gets diff colours but keeps the literal +/- in the page text.
-				// The `diff` language is not used: Expressive Code draws its +/- with CSS,
-				// so an agent reading the HTML would not see which lines were added or removed.
-				shiki: { langAlias: { patch: 'diff' } },
-				styleOverrides: {
-					borderRadius: '0',
-					borderWidth: '1px',
-					frames: { shadowColor: 'transparent' },
-				},
-			},
-			plugins: [
-				starlightLinksValidator({ exclude: ['/**/*.md', '/*.md', '/llms.txt', '/**/llms.txt', '/index.json'] }),
-			],
+			serialize: (item) => ({ ...item, lastmod: VERIFIED }),
 		}),
 	],
 });

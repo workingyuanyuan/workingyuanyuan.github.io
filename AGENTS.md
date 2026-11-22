@@ -1,6 +1,15 @@
 # Rules for agents maintaining this site
 
-This site documents the public GitHub repositories of `workingyuanyuan`. Its first readers are AI agents; humans come second. Markdown source is the only content source, and the HTML is a skin over it.
+This is the root of `https://yuanaruru.com`: the owner's index of the sites under the domain and of the owner's accounts elsewhere. It also serves the files that count for the whole domain. Each other site is built and deployed from its own repository and served at `/<repository>/`.
+
+## Decisions
+
+- 2026-11-22, owner: the root is a simple index for now. A designed personal page comes later and replaces `src/components/Home.astro` and `src/styles/site.css`; the data in `src/lib/site.mjs` stays.
+- 2026-11-22, owner: the pages about the GitHub repositories, which were this site until then, moved unchanged to their own site at `/github-repositories/` (folder `../github-repositories/`). Each old address (`/repos/<name>/`, `/zh-tw/repos/<name>/`, the `.md` twins, the four bundles and `/index.json`) keeps a page or a note that names the new address, because GitHub Pages has no redirects. The 42 pages are the ones that were live on that day; the list (`MOVED` in `src/lib/site.mjs`) does not grow.
+- Order of the first deploy: `github-repositories` first, and only when its pages answer on the domain, this site. The other order sends every old address to a 404.
+- 2026-11-22: accounts on other platforms are listed only when the owner gives them. `LINKS` holds GitHub alone until then.
+- Languages: English at `/`, Traditional Chinese at `/zh-tw/`, as before the move.
+- This site is an index, not a documentation site. Of the shared rules it keeps: a Markdown twin per page, `llms.txt` per language, everything within 5,000 characters, a title, description, canonical and `hreflang` per page, a sitemap with `lastmod`, light and dark themes one click away, no sideways scroll on a phone. The notes at the end of the page (caveat, date, Markdown, list of sites) sit inside `<main>`, so that a reader that keeps only the main text gets them. It has no content collection, bundles, `index.json` or agent test: the page is a list of links.
 
 ## Commands
 
@@ -9,50 +18,38 @@ pnpm verify      # build, then run the acceptance checks. Run this before you ca
 pnpm build       # build only
 pnpm check       # acceptance checks on an existing dist/
 pnpm preview     # serve dist/ at http://127.0.0.1:4399 with the same Content-Type headers as GitHub Pages
-astro dev --background   # dev server; manage with `astro dev stop|status|logs`
 ```
 
 ## Content rules
 
-- Pages live in `src/content/docs/` (English) and `src/content/docs/zh-tw/` (Traditional Chinese). Every page exists in both languages with the same facts, dates, sources and code blocks.
-- Pages are plain `.md`. No MDX, no components, no `:::` directives. An exception needs an explicit Markdown output and a test in `scripts/check-dist.mjs`.
-- Required frontmatter, enforced by `src/content.config.ts`: `title`, `description` (one short sentence saying what the subject is: at most 110 characters in English, 70 in Chinese; details belong in the body), `appliesTo`, `caveat`, `lastVerified`, `sources`. Optional: `effectiveDate` (date of the commit or release the facts were read from), `repo`.
-- The answer, scope and caveat must appear within the first 5,000 characters. There is no limit on total page length.
-- State only facts you verified against the repository. Link sources to a fixed commit, not to a branch.
-- Use `patch` fences for diffs, never `diff`: Starlight draws `diff` markers with CSS, so an agent reading the HTML loses the `+` and `-`.
-- Commands in code blocks carry no `$` prompt.
-- A page says what its subject is. Do not write text addressed to agents into visible content (no "for agents", no "how to read this site"). Guidance for agents lives in each language's `llms.txt` (its opening notes are `LLMS_NOTES` in `src/lib/site.mjs`) and in the pointer that `MarkdownContent.astro` hides from sighted readers.
-- When a README gives a prompt in Chinese, keep it in Chinese inside the code block in both languages, and explain its meaning in the English page's prose.
-- Do not publish personal contact details such as email addresses, even when a README lists them.
+- Every site, link and sentence comes from `src/lib/site.mjs`. The home pages, their Markdown twins, `llms.txt` and `robots.txt` are written from it, so one edit changes them all, in both languages.
+- A new site: add it to `SITES` once it is live (its home page and sitemap return 200). Set `VERIFIED` to the day you opened every link.
+- A new account: add it to `LINKS`. Do not publish personal contact details.
+- Do not create a top-level path that is the name of a repository with Pages enabled; the project site hides it. The check script compares against `SITES`.
+- Visible text says what a site is. Notes for agents go in `llms.txt` (`TEXT.*.llms.notes`).
 
-## Skin rules
+## Whole-domain files
 
-- Decorative characters (`#`, `>`, `[K]`, `~/`) are drawn with CSS `content`. Never write them into page text.
-- No status line at the bottom of the window (owner's decision).
-- Three Starlight components are overridden: `SiteTitle`, `MarkdownContent` and `ThemeSelect` (three buttons, so each theme is one click away; it keeps Starlight's storage key `starlight-theme`). Prefer CSS in `src/styles/tui.css` over another override.
-- The first screen shows content: the answer sits under the title, and the page notes (scope, caveat, dates, repository, sources) come after the body. A visually hidden note at the top repeats scope and caveat so that they fall within the first 5,000 extracted characters.
-- The hidden note, the answer and the page notes are direct children of the article container (`MarkdownContent.astro`), with no wrapper. Readability-style extractors drop them anywhere else, and a wrapper made one keep the notes and drop the body.
-- Wide windows: the table of contents keeps the sidebar's width and the text column sits in the middle of the space between the two ("Wide windows" block in `tui.css`).
-- The same component adds the links on the 404 page. GitHub Pages serves one `404.html` for every language, so they are bilingual.
+| File | Why it is here |
+| --- | --- |
+| `src/pages/robots.txt.ts` | Crawlers read only the root `robots.txt`: content signals, crawlers by name (`CRAWLERS`; training refused, search and user fetches allowed) and the sitemap of every site in `SITES` |
+| `public/<key>.txt` | IndexNow key; at the root it authorizes every URL on the host. `scripts/indexnow.mjs` in each site sends the same key |
+| `google-site-verification` meta in `src/components/Home.astro` | Search Console ownership of the domain. Removing it unverifies the property |
 
 ## Where things are
 
 | Path | Role |
 | --- | --- |
-| `src/lib/site.mjs` | Site URL, locales, URL rules for HTML pages and Markdown twins |
-| `src/lib/page-md.mjs` | Builds each page's Markdown twin |
-| `src/pages/[...slug].md.ts` | Serves the Markdown twins (`/repos/kage/` -> `/repos/kage.md`) |
-| `src/pages/index.json.ts` | Machine-readable page list |
-| `src/lib/llms.mjs`, `src/pages/[...dir]/llms.txt.ts`, `src/pages/[...dir]/llms-[set].txt.ts` | `llms.txt` and the full and digest bundles for each language (`/` and `/zh-tw/`) |
-| `src/pages/robots.txt.ts` | `robots.txt`, served for the whole domain: content signals, crawlers by name (`CRAWLERS` in `src/lib/site.mjs`; training refused, search and user fetches allowed) and every site's sitemap |
-| `src/lib/content-index.mjs` | Reads page frontmatter from disk for the check script |
-| `src/routeData.ts` | Markdown alternate link and JSON-LD in `<head>` |
+| `src/lib/site.mjs` | Address, locales, sites, accounts, all text, the list of moved pages |
+| `src/lib/text.mjs` | Writes the Markdown twins, `llms.txt` and the Markdown left at moved twins |
+| `src/components/Home.astro`, `src/pages/index.astro`, `src/pages/zh-tw/index.astro` | The home page in each language |
+| `src/components/Head.astro`, `src/components/ThemeButtons.astro`, `src/styles/site.css` | Shared head, theme buttons (storage key `theme`), the look |
+| `src/pages/index.md.ts`, `src/pages/zh-tw.md.ts` | Markdown twins: `/index.md`, `/zh-tw.md` |
+| `src/pages/llms.txt.ts`, `src/pages/zh-tw/llms.txt.ts` | List of sites per language, each with its own page list |
+| `src/pages/[...moved].astro`, `src/pages/[...moved].md.ts`, `src/pages/[...file].ts` | Pages and notes left at the old addresses of the repository pages, their twins, the bundles and `index.json` |
+| `src/pages/404.astro` | Links each language's home page and list of sites; GitHub Pages serves one `404.html`, so it is bilingual |
 | `scripts/check-dist.mjs` | Acceptance checks |
-| `src/lib/sitemap.mjs` | Sitemap options: `lastmod` of each page from `lastVerified` |
-| `scripts/check-found.mjs` | Checks called by `check-dist.mjs`: a title and description of its own for every page, canonical, `hreflang`, sitemap |
-| `tests/agent-eval/questions.json` | The site's question list: what readers ask, each with the expected answer and qualifier. The agent test and the search test draw from it |
 | `scripts/indexnow.mjs` | Lists pages whose Markdown twin differs from the live one; the deploy workflow submits them to IndexNow |
 | `scripts/preview.mjs` | Local preview with GitHub Pages style headers |
-| `tests/agent-eval/` | Ten pilot questions, the fetch tool for agent tests, and the recorded results |
 
-Astro documentation: https://docs.astro.build. Starlight documentation: https://starlight.astro.build.
+Astro documentation: https://docs.astro.build.

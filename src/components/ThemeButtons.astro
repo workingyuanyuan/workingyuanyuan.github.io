@@ -1,0 +1,37 @@
+---
+// Three buttons: follow the system, light, dark. Skin only; nothing here is page content.
+interface Props {
+	labels: { label: string; auto: string; light: string; dark: string };
+}
+const { labels } = Astro.props;
+---
+
+<div class="themes" role="group" aria-label={labels.label}>
+	<button type="button" data-theme-choice="auto">{labels.auto}</button>
+	<button type="button" data-theme-choice="light">{labels.light}</button>
+	<button type="button" data-theme-choice="dark">{labels.dark}</button>
+</div>
+
+<script is:inline>
+	(() => {
+		const root = document.documentElement;
+		const buttons = document.querySelectorAll('[data-theme-choice]');
+		const show = () => {
+			const current = root.dataset.theme ?? 'auto';
+			for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.themeChoice === current));
+		};
+		for (const b of buttons) {
+			b.addEventListener('click', () => {
+				const choice = b.dataset.themeChoice;
+				if (choice === 'auto') delete root.dataset.theme;
+				else root.dataset.theme = choice;
+				try {
+					if (choice === 'auto') localStorage.removeItem('theme');
+					else localStorage.setItem('theme', choice);
+				} catch {}
+				show();
+			});
+		}
+		show();
+	})();
+</script>

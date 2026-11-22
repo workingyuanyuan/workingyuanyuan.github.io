@@ -1,0 +1,101 @@
+---
+// The home page in one language: a list of the sites under the domain, then the owner's
+// accounts elsewhere. All text and links come from src/lib/site.mjs.
+import Head from './Head.astro';
+import ThemeButtons from './ThemeButtons.astro';
+import '../styles/site.css';
+import {
+	SITE, NAME, VERIFIED, LOCALES, SITES, LINKS, GROUPS, TEXT, homePath, mdPath, llmsPath, siteUrl,
+} from '../lib/site.mjs';
+
+interface Props {
+	lang: string;
+}
+const { lang } = Astro.props;
+const locale = LOCALES.find((l) => l.lang === lang)!;
+const t = TEXT[lang];
+const url = SITE + homePath(locale);
+const jsonLd = {
+	'@context': 'https://schema.org',
+	'@type': 'WebSite',
+	name: NAME,
+	url,
+	inLanguage: lang,
+	description: t.description,
+	dateModified: VERIFIED,
+	hasPart: SITES.map((s) => ({ '@type': 'WebSite', name: s.name[lang], url: siteUrl(s, lang), description: s.about[lang] })),
+	sameAs: LINKS.map((l) => l.url),
+};
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<Head title={NAME} description={t.description}>
+			<link rel="canonical" href={url} />
+			{LOCALES.map((l) => <link rel="alternate" hreflang={l.lang} href={SITE + homePath(l)} />)}
+			<link rel="alternate" hreflang="x-default" href={SITE + homePath(LOCALES[0])} />
+			<link rel="alternate" type="text/markdown" href={SITE + mdPath(locale)} />
+			<!-- Google Search Console ownership of the domain (URL-prefix property). Keep it:
+			     removing it unverifies the property. -->
+			<meta name="google-site-verification" content="HAmujzQWC-r7ONB0_ef91o4cFOUJXnQKzi0t5F8uxR4" />
+			<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+		</Head>
+	</head>
+	<body>
+		<header class="bar">
+			<nav class="langs" aria-label={t.languages}>
+				{
+					LOCALES.map((l) =>
+						l === locale ? (
+							<span aria-current="page" lang={l.lang}>{l.label}</span>
+						) : (
+							<a href={homePath(l)} lang={l.lang} hreflang={l.lang}>{l.label}</a>
+						)
+					)
+				}
+			</nav>
+			<ThemeButtons labels={t.themes} />
+		</header>
+		<main>
+			<h1 translate="no">{NAME}</h1>
+			<p class="lead">{t.description}</p>
+			{
+				GROUPS.map((group) => (
+					<section>
+						<h2>{t.groups[group]}</h2>
+						<ul class="sites" role="list">
+							{SITES.filter((s) => s.group === group).map((s) => (
+								<li>
+									<h3><a href={siteUrl(s, lang)}>{s.name[lang]}</a></h3>
+									<p>{s.about[lang]}{t.stop}</p>
+									{s.languages && <p class="note">{t.languages}{t.colon}{s.languages.join(t.sep)}{t.stop}</p>}
+								</li>
+							))}
+						</ul>
+					</section>
+				))
+			}
+			<section>
+				<h2>{t.links}</h2>
+				<ul class="sites" role="list">
+					{LINKS.map((l) => (
+						<li>
+							<h3><a href={l.url}>{l.name[lang]}</a></h3>
+							<p>{l.about[lang]}{t.stop}</p>
+						</li>
+					))}
+				</ul>
+			</section>
+			<section class="notes">
+				<h2>{t.notes}</h2>
+				<ul role="list">
+					<li>{t.caveat}{t.colon}{t.caveatValue}</li>
+					<li>{t.verified}{t.colon}<time datetime={VERIFIED}>{VERIFIED}</time></li>
+					<li>{t.markdown}{t.colon}<a href={mdPath(locale)}>{SITE + mdPath(locale)}</a></li>
+					<li>{t.siteList}{t.colon}<a href={llmsPath(locale)}>{SITE + llmsPath(locale)}</a></li>
+				</ul>
+			</section>
+		</main>
+	</body>
+</html>

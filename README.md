@@ -2,11 +2,11 @@
 
 Live site: <https://yuanaruru.com/> (English), <https://yuanaruru.com/zh-tw/> (Traditional Chinese)
 
-Reference pages for the public GitHub repositories of `workingyuanyuan`, written for AI agents first and styled as a terminal for humans. Built with [Starlight](https://starlight.astro.build).
+The root of yuanaruru.com: an index of the sites under the domain, and the files that count for the whole domain (`robots.txt`, the IndexNow key). Built with [Astro](https://astro.build).
 
-- Every page has a Markdown twin: drop the trailing slash from the page URL and append `.md`.
-- `/llms.txt` (English), `/zh-tw/llms.txt` (Traditional Chinese) and `/index.json` list every page.
-- English at `/`, Traditional Chinese at `/zh-tw/`.
+- `/index.md` and `/zh-tw.md` are the Markdown versions of the two pages.
+- `/llms.txt` and `/zh-tw/llms.txt` list every site with its own page list.
+- The pages about the GitHub repositories are at <https://yuanaruru.com/github-repositories/>.
 
 ```
 pnpm install

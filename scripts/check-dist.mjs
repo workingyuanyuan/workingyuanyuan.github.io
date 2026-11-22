@@ -1,255 +1,137 @@
 // Acceptance checks on the built site in dist/. Run with `pnpm check` after `pnpm build`.
-// Fails (exit 1) when an agent would get a worse page than a human does.
+// Fails (exit 1) when a reader, a crawler or an agent would get less than the site means to give.
 //
-//  1. Pairing: every HTML page has a Markdown twin, an alternate link, a visible
-//     link to the twin, and entries in llms.txt and index.json.
-//  2. Clean Markdown: no JSX, no MDX imports, no `:::` directives.
-//  3. First 5,000 characters: the answer, scope and caveat appear within the first
-//     5,000 characters of the Markdown twin and of the text extracted from the HTML.
-//  4. Equivalence: headings and code blocks extracted from the HTML match the twin.
-//  5. No decoration leak: bracketed key hints and heading marks must not
-//     appear in the text extracted from the HTML.
-//  6. Language parity: both languages have the same pages, dates, sources and code.
-//  7. Bundles: each language's llms-full.txt and llms-small.txt carry every page's
-//     answer and caveat; a hidden pointer to the Markdown twin survives extraction.
-//  8. llms.txt: notes, bundles and other languages within the first 5,000 characters.
-//  9. The 404 page links each language's home page and page list.
-// 10. robots.txt names the sitemap and carries a Content-Signal line.
-// 11. The IndexNow key file at the domain root holds the key that scripts/indexnow.mjs sends.
-// Being found: title, description, canonical, hreflang and sitemap (scripts/check-found.mjs).
+//  1. Home page, per language: title, a description of its own within the length limit,
+//     canonical, hreflang, a link to its Markdown twin, a link to every site and account,
+//     and all of it, with the caveat, within the first 5,000 characters of the text that
+//     a reader keeping only the main article extracts (Readability, then Turndown).
+//  2. Markdown twin, per language: the same links, the caveat, within 5,000 characters.
+//  3. llms.txt, per language: every site with its page list, within 5,000 characters.
+//  4. robots.txt: this site's sitemap, one line per site and no other, the Content-Signal
+//     line, and every crawler by name with the rule the owner decided.
+//  5. The IndexNow key file at the domain root holds the key that scripts/indexnow.mjs sends.
+//  6. The sitemap lists the home page in each language, with lastmod, and nothing else.
+//  7. The 404 page links each language's home page and list of sites.
+//  8. Every old address of a moved page sends the reader to the new one, in HTML and
+//     Markdown, and the old bundles and index.json name their new address.
+//  9. No top-level path of this site is the path of another site under the domain.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import TurndownService from 'turndown';
-import { SITE, LOCALES, LLMS_NOTES, CRAWLERS, localeOf, idInLocale, htmlPath, mdPath, llmsPath } from '../src/lib/site.mjs';
-import { bundlePath } from '../src/lib/llms.mjs';
-import { readPages } from '../src/lib/content-index.mjs';
-import { checkFound } from './check-found.mjs';
+import {
+	DOMAIN, SITE, NAME, VERIFIED, LOCALES, SITES, LINKS, CRAWLERS, TEXT, MOVED, MOVED_FILES, MOVED_TO, homePath, mdPath, llmsPath, siteUrl,
+} from '../src/lib/site.mjs';
 
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
 const LIMIT = 5000;
+/** Repository pages that were live at the old addresses when they moved: 21 in each language. */
+const MOVED_PAGES = 42;
+const turndown = new TurndownService({ headingStyle: 'atx' });
+const MAX_DESCRIPTION = { en: 110, 'zh-TW': 70 };
 const failures = [];
-const fail = (page, message) => failures.push(`${page}: ${message}`);
+const fail = (where, message) => failures.push(`${where}: ${message}`);
+const has = (path) => existsSync(join(DIST, path));
+const read = (path) => (has(path) ? readFileSync(join(DIST, path), 'utf8') : '');
+const fileOf = (sitePath) => sitePath.slice(1) + (sitePath.endsWith('/') ? 'index.html' : '');
 
-const read = (path) => readFileSync(join(DIST, path), 'utf8');
-const normalize = (text) => text.replace(/\s+/g, ' ').trim();
+// 1-3. Home page, twin and llms.txt in each language.
+const descriptions = new Set();
+for (const locale of LOCALES) {
+	const { lang } = locale;
+	const t = TEXT[lang];
+	const page = homePath(locale);
+	const targets = [...SITES.map((s) => siteUrl(s, lang)), ...LINKS.map((l) => l.url)];
 
-/** Fenced code blocks of a Markdown string, as trimmed strings. */
-function codeBlocks(markdown) {
-	return [...markdown.matchAll(/^```[^\n]*\n([\s\S]*?)^```/gm)].map((m) => m[1].trim());
-}
-/** ATX headings of a Markdown string outside code blocks, as `level text`. */
-function headings(markdown) {
-	const withoutCode = markdown.replace(/^```[^\n]*\n[\s\S]*?^```/gm, '');
-	return [...withoutCode.matchAll(/^(#{1,6}) (.+)$/gm)].map((m) => `${m[1].length} ${m[2].trim()}`);
-}
-
-if (!existsSync(DIST)) {
-	console.error('dist/ not found. Run `pnpm build` first.');
-	process.exit(1);
-}
-
-const pages = readPages();
-const ids = new Set(pages.map((p) => p.id));
-/** Each language's llms.txt, by locale. */
-const llmsTxt = new Map(LOCALES.map((l) => [l, read(llmsPath(l).slice(1))]));
-const indexJson = JSON.parse(read('index.json'));
-const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
-
-// Every HTML file in dist must belong to a known page (or be the 404 page).
-function htmlFiles(dir) {
-	return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-		e.isDirectory()
-			? e.name.startsWith('_') || e.name === 'pagefind'
-				? []
-				: htmlFiles(join(dir, e.name))
-			: e.name.endsWith('.html')
-				? [relative(DIST, join(dir, e.name)).replace(/\\/g, '/')]
-				: []
-	);
-}
-const expectedHtml = new Set(pages.map((p) => (htmlPath(p.id) + 'index.html').slice(1)));
-for (const file of htmlFiles(DIST)) {
-	if (file !== '404.html' && !expectedHtml.has(file)) fail(file, 'HTML page without a content entry');
-}
-
-for (const { id, data } of pages) {
-	const mdFile = mdPath(id).slice(1);
-	const htmlFile = (htmlPath(id) + 'index.html').slice(1);
-	if (!existsSync(join(DIST, htmlFile))) {
-		fail(id, `missing HTML page ${htmlFile}`);
+	if (!has(fileOf(page))) {
+		fail(page, 'missing');
 		continue;
 	}
-	if (!existsSync(join(DIST, mdFile))) {
-		fail(id, `missing Markdown twin ${mdFile}`);
-		continue;
-	}
-	const md = read(mdFile);
-	const html = read(htmlFile);
-	const dom = new JSDOM(html, { url: SITE + htmlPath(id) });
-	const doc = dom.window.document;
-
-	// 1. Pairing
-	const alternate = doc.querySelector('link[rel="alternate"][type="text/markdown"]');
-	if (alternate?.getAttribute('href') !== SITE + mdPath(id)) fail(id, 'missing or wrong <link rel="alternate" type="text/markdown">');
-	if (!doc.querySelector(`main a[href="${mdPath(id)}"]`)) fail(id, 'no visible link to the Markdown twin inside <main>');
-	if (!llmsTxt.get(localeOf(id)).includes(SITE + mdPath(id))) fail(id, `Markdown twin not listed in ${llmsPath(localeOf(id))}`);
-	if (!indexJson.pages.some((p) => p.markdown === SITE + mdPath(id))) fail(id, 'page not listed in index.json');
-	if (!doc.querySelector('script[type="application/ld+json"]')) fail(id, 'missing JSON-LD');
-
-	// 7. Bundles and the pointer for agents
-	for (const set of ['full', 'small']) {
-		const bundle = normalize(read(bundlePath(localeOf(id), set).slice(1)));
-		for (const text of [data.description, data.caveat]) {
-			if (!bundle.includes(normalize(String(text)))) fail(id, `answer or caveat missing from ${bundlePath(localeOf(id), set)}`);
-		}
-			}
-	const note = doc.querySelector('main .agent-note');
-	if (!note?.textContent.includes(SITE + mdPath(id)) || !note.textContent.includes(SITE + llmsPath(localeOf(id)))) fail(id, 'missing hidden pointer to the Markdown twin and the page list');
-	if (note && (note.hasAttribute('hidden') || note.getAttribute('aria-hidden') === 'true' || note.getAttribute('style'))) {
-		fail(id, 'the pointer for agents must be hidden by CSS class only, or extractors drop it');
-	}
-
-	// 2. Clean Markdown
-	const mdProse = md.replace(/^```[^\n]*\n[\s\S]*?^```/gm, '').replace(/`[^`\n]*`/g, '');
-	if (/<[A-Z][A-Za-z]*[\s/>]/.test(mdProse)) fail(id, 'JSX component tag in Markdown twin');
-	if (/^import\s.+from\s/m.test(mdProse)) fail(id, 'MDX import in Markdown twin');
-	if (/^:::/m.test(mdProse)) fail(id, '`:::` directive in Markdown twin');
-
-	// The answer under the title is one short sentence.
-	const maxAnswer = localeOf(id).lang === 'en' ? 110 : 70;
-	if (String(data.description).length > maxAnswer) fail(id, `description is ${String(data.description).length} characters; the limit is ${maxAnswer}`);
-
-	// 3. First 5,000 characters
-	const required = [
-		['answer', data.description],
-		['scope', data.appliesTo],
-		['caveat', data.caveat],
-	];
-	const mdHead = normalize(md.slice(0, LIMIT));
-	for (const [name, text] of required) {
-		if (!mdHead.includes(normalize(String(text)))) fail(id, `${name} not within the first ${LIMIT} characters of the Markdown twin`);
-	}
-	// Worst case for HTML: a fetch tool that keeps the whole body, navigation included.
-	for (const el of doc.querySelectorAll('script, style, template, svg')) el.remove();
-	const bodyHead = normalize(doc.body.textContent).slice(0, LIMIT);
-	for (const [name, text] of required) {
-		if (!bodyHead.includes(normalize(String(text)))) fail(id, `${name} not within the first ${LIMIT} characters of the full HTML text`);
-	}
-
-	// 4. Equivalence, on the article that a readability-style extractor keeps.
-	const article = new Readability(new JSDOM(html, { url: SITE + htmlPath(id) }).window.document).parse();
-	const mainEl = doc.querySelector('main');
-	const extracted = turndown.turndown(mainEl.innerHTML);
-	const mdBody = md.slice(md.indexOf('\n---\n') + 5);
-	const wantHeadings = headings(mdBody).map((h) => normalize(h.replace(/`/g, '')));
-	const gotHeadings = headings(extracted)
-		.filter((h) => !h.startsWith('1 '))
-		.map((h) => normalize(h.replace(/\\/g, '').replace(/`/g, '')));
-	if (JSON.stringify(wantHeadings) !== JSON.stringify(gotHeadings)) {
-		fail(id, `headings differ between HTML and Markdown twin\n    md:   ${wantHeadings.join(' | ')}\n    html: ${gotHeadings.join(' | ')}`);
-	}
-	const wantCode = codeBlocks(mdBody).map(normalize);
-	const gotCode = [...mainEl.querySelectorAll('pre')].map((pre) => {
-		const lines = [...pre.querySelectorAll('.ec-line')];
-		const text = lines.length ? lines.map((l) => l.textContent).join('\n') : pre.textContent;
-		return normalize(text);
-	});
-	if (JSON.stringify(wantCode) !== JSON.stringify(gotCode)) {
-		fail(id, `code blocks differ between HTML (${gotCode.length}) and Markdown twin (${wantCode.length})`);
-		for (let i = 0; i < Math.max(wantCode.length, gotCode.length); i++) {
-			if (wantCode[i] !== gotCode[i]) {
-				failures.push(`    block ${i + 1}\n      md:   ${wantCode[i]}\n      html: ${gotCode[i]}`);
-				break;
-			}
-		}
-	}
-	if (!article || !normalize(article.textContent).includes(normalize(String(data.description)))) {
-		fail(id, 'a readability-style extractor does not keep the answer');
-	}
-	if (article && !article.textContent.includes(SITE + mdPath(id))) {
-		fail(id, 'a readability-style extractor does not keep the pointer to the Markdown twin');
-	}
-
-	// The home page must link every page of its language within the first 5,000
-	// characters an extractor returns, or an agent on a small fetch budget cannot find them.
-	if (id === 'index' || LOCALES.some((l) => l.dir === id)) {
-		const head = turndown.turndown(article?.content ?? '').slice(0, LIMIT);
-		for (const other of pages) {
-			if (other.id === id || localeOf(other.id) !== localeOf(id)) continue;
-			if (!head.includes(htmlPath(other.id))) fail(id, `link to ${htmlPath(other.id)} is not within the first ${LIMIT} extracted characters of the home page`);
-		}
-	}
-
-	// 5. No decoration leak into extracted text.
-	const visible = normalize(doc.body.textContent);
-	for (const [name, pattern] of [
-		['bracketed key hint', /\[[A-Z]\]\s?[A-Za-z]/],
-		['heading mark', /(^|\s)#{1,3} (Facts|事實)/],
-		['site title prefix', /~\/workingyuanyuan/],
-	]) {
-		if (pattern.test(visible)) fail(id, `decoration leaked into page text: ${name}`);
-	}
-
-	// 6. Language parity
+	const doc = new JSDOM(read(fileOf(page))).window.document;
+	const head = (selector, attr) => doc.querySelector(`head ${selector}`)?.getAttribute(attr);
+	if (doc.documentElement.lang !== lang) fail(page, `<html lang> is not ${lang}`);
+	if (!doc.querySelector('head title')?.textContent.trim()) fail(page, 'no <title>');
+	const description = head('meta[name="description"]', 'content');
+	if (description !== t.description) fail(page, 'meta description is not the description in site.mjs');
+	if (t.description.length > MAX_DESCRIPTION[lang]) fail(page, `description has ${t.description.length} characters; the limit is ${MAX_DESCRIPTION[lang]}`);
+	if (descriptions.has(t.description)) fail(page, 'same description as another language');
+	descriptions.add(t.description);
+	if (head('link[rel="canonical"]', 'href') !== SITE + page) fail(page, 'canonical link missing or not the page itself');
 	for (const other of LOCALES) {
-		if (other === localeOf(id)) continue;
-		const otherId = idInLocale(id, other);
-		if (!ids.has(otherId)) {
-			fail(id, `no ${other.label} version (${otherId})`);
-			continue;
+		if (head(`link[rel="alternate"][hreflang="${other.lang}"]`, 'href') !== SITE + homePath(other)) fail(page, `no hreflang link to the ${other.label} version`);
+	}
+	if (head('link[rel="alternate"][hreflang="x-default"]', 'href') !== SITE + homePath(LOCALES[0])) fail(page, 'x-default is not the home page of the first language');
+	if (doc.querySelectorAll('head link[rel="alternate"][hreflang]').length !== LOCALES.length + 1) fail(page, 'an hreflang link too many or too few');
+	if (head('link[rel="alternate"][type="text/markdown"]', 'href') !== SITE + mdPath(locale)) fail(page, 'no alternate link to the Markdown twin');
+	let jsonLd = null;
+	try {
+		jsonLd = JSON.parse(doc.querySelector('head script[type="application/ld+json"]')?.textContent ?? '');
+	} catch {}
+	if (jsonLd?.['@type'] !== 'WebSite' || jsonLd.name !== NAME || jsonLd.url !== SITE + page || jsonLd.inLanguage !== lang || jsonLd.hasPart?.length !== SITES.length) {
+		fail(page, 'JSON-LD missing or without the name, address, language and sites of this page');
+	}
+	if (!doc.querySelector(`body a[href="${mdPath(locale)}"]`)) fail(page, 'no visible link to the Markdown twin');
+	for (const other of LOCALES) {
+		if (other !== locale && !doc.querySelector(`body a[href="${homePath(other)}"]`)) fail(page, `no link to the ${other.label} page`);
+	}
+	const main = doc.querySelector('main');
+	for (const url of targets) {
+		if (!main?.querySelector(`a[href="${url}"]`)) fail(page, `no link to ${url}`);
+	}
+	for (const a of main?.querySelectorAll('section:not(.notes) a[href]') ?? []) {
+		if (!targets.includes(a.getAttribute('href'))) fail(page, `links ${a.getAttribute('href')}, which is neither in SITES nor in LINKS`);
+	}
+	// What a fetch tool gives an agent: the main article as Markdown, links made absolute.
+	const article = new Readability(new JSDOM(read(fileOf(page)), { url: SITE + page }).window.document).parse();
+	const extracted = turndown.turndown(article?.content ?? '');
+	if (extracted.length > LIMIT) fail(page, `extracted text has ${extracted.length} characters; the limit is ${LIMIT}`);
+	for (const url of [...targets, SITE + mdPath(locale), SITE + llmsPath(locale)]) {
+		if (!extracted.includes(`](${url})`)) fail(page, `extracted text has no link to ${url}`);
+	}
+	if (!extracted.includes(t.caveatValue)) fail(page, 'extracted text lacks the caveat');
+
+	const md = read(mdPath(locale).slice(1));
+	if (!md) fail(mdPath(locale), 'missing');
+	else {
+		if (md.length > LIMIT) fail(mdPath(locale), `has ${md.length} characters; the limit is ${LIMIT}`);
+		for (const url of targets) if (!md.includes(`](${url})`)) fail(mdPath(locale), `no link to ${url}`);
+		for (const line of [t.description, t.caveatValue, VERIFIED, `<${SITE}${page}>`]) {
+			if (!md.includes(line)) fail(mdPath(locale), `lacks: ${line}`);
 		}
-		const twin = pages.find((p) => p.id === otherId).data;
-		const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-		if (!same(data.lastVerified, twin.lastVerified)) fail(id, `lastVerified differs from ${otherId}`);
-		if (!same(data.effectiveDate, twin.effectiveDate)) fail(id, `effectiveDate differs from ${otherId}`);
-		if (!same(data.repo, twin.repo)) fail(id, `repo differs from ${otherId}`);
-		if (!same(data.sources?.map((s) => s.url), twin.sources?.map((s) => s.url))) fail(id, `source URLs differ from ${otherId}`);
-		const otherMd = read(mdPath(otherId).slice(1));
-		if (!same(codeBlocks(md), codeBlocks(otherMd))) fail(id, `code blocks differ from ${otherId}`);
-		if (headings(md).length !== headings(otherMd).length) fail(id, `number of headings differs from ${otherId}`);
+		if (/<\/?[a-z][^>]*>/i.test(md.replace(/<https?:[^>]+>/g, ''))) fail(mdPath(locale), 'holds HTML');
+	}
+
+	const llms = read(llmsPath(locale).slice(1));
+	if (!llms) fail(llmsPath(locale), 'missing');
+	else {
+		if (llms.length > LIMIT) fail(llmsPath(locale), `has ${llms.length} characters; the limit is ${LIMIT}`);
+		for (const site of SITES) {
+			if (!llms.includes(`](${siteUrl(site, lang)})`)) fail(llmsPath(locale), `no link to ${siteUrl(site, lang)}`);
+			if (site.llms && !llms.includes(`<${DOMAIN}${site.llms[lang]}>`)) fail(llmsPath(locale), `no page list for ${site.root}`);
+		}
+		for (const link of LINKS) if (!llms.includes(`](${link.url})`)) fail(llmsPath(locale), `no link to ${link.url}`);
+		for (const note of t.llms.notes) if (!llms.includes(note)) fail(llmsPath(locale), 'a note is missing');
+		if (!llms.includes(`](${SITE}${mdPath(locale)})`)) fail(llmsPath(locale), 'no link to the home page twin');
+		for (const other of LOCALES) {
+			if (other !== locale && !llms.includes(`](${SITE}${llmsPath(other)})`)) fail(llmsPath(locale), `no link to the ${other.label} list`);
+		}
 	}
 }
 
-// 8. llms.txt: what an agent must know before it answers, the bundles and the other
-// languages all come within the first 5,000 characters, ahead of the page list.
-for (const locale of LOCALES) {
-	const name = llmsPath(locale);
-	const head = llmsTxt.get(locale).slice(0, LIMIT);
-	for (const note of LLMS_NOTES[locale.lang].notes) {
-		if (!head.includes(note)) fail(name, `a note is not within the first ${LIMIT} characters`);
-	}
-	const links = [
-		...['full', 'small'].map((set) => bundlePath(locale, set)),
-		'/index.json',
-		...LOCALES.filter((other) => other !== locale).map(llmsPath),
-	];
-	for (const link of links) {
-		if (!head.includes(`${SITE}${link}`)) fail(name, `link to ${link} is not within the first ${LIMIT} characters`);
-	}
-	const listed = pages.filter((p) => localeOf(p.id) === locale);
-	const beyond = listed.filter((p) => !head.includes(SITE + mdPath(p.id))).length;
-	if (beyond) console.warn(`note: ${name} lists ${beyond} of ${listed.length} pages beyond its first ${LIMIT} characters`);
-}
-
-// 9. A wrong URL is not a dead end: the 404 page links each language's home and page list.
-const notFound = new JSDOM(read('404.html')).window.document;
-for (const locale of LOCALES) {
-	for (const href of [locale.dir ? `/${locale.dir}/` : '/', llmsPath(locale)]) {
-		if (!notFound.querySelector(`main a[href="${href}"]`)) fail('404.html', `no link to ${href}`);
-	}
-}
-
-// 10. robots.txt names the sitemap and states how the content may be used.
-const robots = existsSync(join(DIST, 'robots.txt')) ? read('robots.txt') : '';
-if (!robots.includes(`Sitemap: ${SITE}/sitemap-index.xml`)) fail('robots.txt', 'missing or without the sitemap');
-if (!/^Content-Signal: /m.test(robots)) fail('robots.txt', 'no Content-Signal line');
-// Crawlers by name. A crawler follows the rules of every group that names it (names
-// compare without case), so collect them all. A group is a run of User-agent lines and
-// the rules after it; comments and blank lines do not end the run.
+// 4. robots.txt: sitemaps, the use of the content, crawlers by name.
+const robots = read('robots.txt');
+const sitemapLines = robots.split('\n').filter((line) => /^Sitemap:/i.test(line));
+const wanted = [`Sitemap: ${SITE}/sitemap-index.xml`, ...SITES.map((s) => `Sitemap: ${DOMAIN}${s.sitemap}`)];
+for (const line of wanted) if (!sitemapLines.includes(line)) fail('robots.txt', `lacks the line "${line}"`);
+for (const line of sitemapLines) if (!wanted.includes(line)) fail('robots.txt', `has "${line}", which no site in SITES gives`);
+if (new Set(sitemapLines).size !== sitemapLines.length) fail('robots.txt', 'names a sitemap twice');
+if (!/^Content-Signal: search=yes, ai-input=yes, ai-train=no$/m.test(robots)) fail('robots.txt', 'no Content-Signal line with the owner\'s decision');
+// A crawler follows the rules of every group that names it (names compare without case),
+// so collect them all. A group is a run of User-agent lines and the rules after it;
+// comments and blank lines do not end the run.
 const rulesFor = new Map();
 let naming = false; // true while reading the User-agent lines that open a group
 let current = [];
@@ -276,20 +158,93 @@ for (const [names, refused] of [[CRAWLERS.allow, false], [CRAWLERS.disallow, tru
 		else if (!refused && disallows.length) fail('robots.txt', `${name} is a search or user crawler and is disallowed`);
 	}
 }
-
-// 11. IndexNow key file: `<key>.txt` containing the key. At the domain root it covers the
-// project sites too, so only this site serves it.
-const indexnowKey = readFileSync('scripts/indexnow.mjs', 'utf8').match(/INDEXNOW_KEY = '([0-9a-f]{32})'/)?.[1];
-const keyFile = `${indexnowKey}.txt`;
-if (!indexnowKey || !existsSync(join(DIST, keyFile)) || read(keyFile).trim() !== indexnowKey) {
-	fail(keyFile, 'IndexNow key file missing or does not hold the key in scripts/indexnow.mjs');
+// No other group may refuse anything: a crawler follows the group that names it.
+const mayRefuse = CRAWLERS.disallow.map((name) => name.toLowerCase());
+for (const [name, rules] of rulesFor) {
+	if (!mayRefuse.includes(name) && rules.some((r) => /^Disallow:\s*\S/i.test(r))) fail('robots.txt', `the group for ${name} disallows something`);
 }
 
-checkFound(DIST, pages, fail);
+// 5. IndexNow key file: `<key>.txt` containing the key. At the domain root it covers the
+// project sites too, so only this site serves it.
+const indexnowKey = readFileSync(fileURLToPath(new URL('./indexnow.mjs', import.meta.url)), 'utf8').match(/INDEXNOW_KEY = '([0-9a-f]{32})'/)?.[1];
+if (!indexnowKey || read(`${indexnowKey}.txt`).trim() !== indexnowKey) {
+	fail(`${indexnowKey}.txt`, 'IndexNow key file missing or does not hold the key in scripts/indexnow.mjs');
+}
+
+// 6. Sitemap: the home page in each language, with lastmod, and nothing else.
+const listed = new Map();
+for (const [, sitemapUrl] of read('sitemap-index.xml').matchAll(/<loc>([^<]+)<\/loc>/g)) {
+	const file = sitemapUrl.startsWith(SITE + '/') ? sitemapUrl.slice(SITE.length + 1) : null;
+	if (!file || !has(file)) {
+		fail('sitemap-index.xml', `names ${sitemapUrl}, which is not in dist/`);
+		continue;
+	}
+	for (const [, entry] of read(file).matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+		listed.set(/<loc>([^<]+)<\/loc>/.exec(entry)?.[1], /<lastmod>([^<]+)<\/lastmod>/.exec(entry)?.[1]);
+	}
+}
+const expected = LOCALES.map((l) => SITE + homePath(l));
+for (const url of expected) {
+	if (!listed.has(url)) fail('sitemap', `${url} is not listed`);
+	else if (listed.get(url)?.slice(0, 10) !== VERIFIED) fail('sitemap', `lastmod of ${url} is ${listed.get(url) ?? 'missing'}, not ${VERIFIED}`);
+}
+for (const url of listed.keys()) if (!expected.includes(url)) fail('sitemap', `${url} is listed but is not a home page`);
+
+// 7. A wrong URL is not a dead end.
+const notFound = new JSDOM(read('404.html')).window.document;
+for (const locale of LOCALES) {
+	for (const href of [homePath(locale), llmsPath(locale)]) {
+		if (!notFound.querySelector(`main a[href="${href}"]`)) fail('404.html', `no link to ${href}`);
+	}
+}
+if (!notFound.querySelector(`main a[href="${MOVED_TO}/"]`)) fail('404.html', 'no link to where the repository pages moved');
+
+// 8. Old addresses of the moved pages.
+if (MOVED.length !== MOVED_PAGES || new Set(MOVED.map((p) => p.id)).size !== MOVED_PAGES) {
+	fail('MOVED', `has ${MOVED.length} old addresses; ${MOVED_PAGES} pages were live when they moved`);
+}
+for (const page of MOVED) {
+	const file = `${page.id}/index.html`;
+	const twin = page.to.replace(/\/$/, '') + '.md';
+	if (!has(file)) {
+		fail(`/${page.id}/`, 'old address has no page');
+		continue;
+	}
+	const doc = new JSDOM(read(file)).window.document;
+	if (doc.querySelector('link[rel="canonical"]')?.getAttribute('href') !== page.to) fail(`/${page.id}/`, 'canonical is not the new address');
+	if (doc.querySelector('meta[http-equiv="refresh"]')?.getAttribute('content') !== `0; url=${page.to}`) fail(`/${page.id}/`, 'does not send a browser to the new address');
+	if (!doc.querySelector(`body a[href="${page.to}"]`)) fail(`/${page.id}/`, 'no link to the new address in the text');
+	if (!doc.querySelector(`body a[href="${twin}"]`)) fail(`/${page.id}/`, 'no link to the new Markdown twin');
+	if (!read(`${page.id}.md`).split('\n').some((line) => line.endsWith(`<${twin}>`))) fail(`/${page.id}.md`, 'missing or without a link to the new address');
+}
+for (const file of MOVED_FILES) {
+	const text = read(file.path);
+	const named = file.path.endsWith('.json') ? (() => { try { return JSON.parse(text).moved === file.to; } catch { return false; } })() : text.includes(`<${file.to}>`);
+	if (!named) fail(`/${file.path}`, 'old address missing or without the new address');
+}
+// On this machine the repository site sits next to this folder: every page it has must
+// have an old address here, and every old address must lead to a page it has.
+const reposContent = fileURLToPath(new URL('../../github-repositories/src/content/docs/', import.meta.url));
+if (existsSync(reposContent)) {
+	for (const locale of LOCALES) {
+		const dir = join(reposContent, locale.dir, 'repos');
+		const there = readdirSync(dir).filter((f) => f.endsWith('.md') && f !== 'index.md').map((f) => `${locale.dir ? locale.dir + '/' : ''}repos/${f.slice(0, -3)}`);
+		const here = MOVED.filter((p) => p.lang === locale.lang).map((p) => p.id);
+		for (const id of there) if (!here.includes(id)) fail(`/${id}/`, 'page of the repository site without an old address here');
+		for (const id of here) if (!there.includes(id)) fail(`/${id}/`, 'old address leads to a page the repository site does not have');
+	}
+}
+
+// 9. A project site is served at /<repository>/ and hides anything this site puts there.
+const top = readdirSync(DIST).map((name) => name.toLowerCase());
+for (const site of SITES) {
+	const name = site.root.replaceAll('/', '').toLowerCase();
+	if (top.includes(name)) fail(`/${name}`, `this site has a top-level path that belongs to the site at ${site.root}`);
+}
 
 if (failures.length) {
-	console.error(`FAIL: ${failures.filter((f) => !f.startsWith('    ')).length} problem(s) in ${pages.length} pages\n`);
+	console.error(`FAIL: ${failures.length} problem(s)\n`);
 	for (const f of failures) console.error('- ' + f);
 	process.exit(1);
 }
-console.log(`PASS: ${pages.length} pages, each with a Markdown twin; all checks passed.`);
+console.log(`PASS: ${LOCALES.length} home pages, ${SITES.length} sites, ${MOVED.length} old addresses; all checks passed.`);

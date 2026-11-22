@@ -1,0 +1,32 @@
+---
+// Old addresses of the repository pages (/repos/kage/, /zh-tw/repos/kage/). GitHub Pages
+// has no redirects, so each keeps a page that sends a browser on and tells any other
+// reader where the page is now.
+import { MOVED, TEXT } from '../lib/site.mjs';
+
+export function getStaticPaths() {
+	return MOVED.map((page) => ({ params: { moved: page.id }, props: { page } }));
+}
+const { page } = Astro.props;
+const t = TEXT[page.lang];
+const twin = page.to.replace(/\/$/, '') + '.md';
+---
+
+<!doctype html>
+<html lang={page.lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{t.moved(page.to)}</title>
+		<link rel="canonical" href={page.to} />
+		<meta http-equiv="refresh" content={`0; url=${page.to}`} />
+		<!-- Keeps the part after # (a heading of the page), which the refresh above drops. -->
+		<script is:inline define:vars={{ to: page.to }}>location.replace(to + location.hash);</script>
+	</head>
+	<body>
+		<main>
+			<p>{t.moved('')}<a href={page.to}>{page.to}</a></p>
+			<p>{t.markdown}{t.colon}<a href={twin}>{twin}</a></p>
+		</main>
+	</body>
+</html>

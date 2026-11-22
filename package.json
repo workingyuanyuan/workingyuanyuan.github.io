@@ -4,7 +4,6 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
     "build": "astro build",
     "preview": "node scripts/preview.mjs",
     "astro": "astro",
@@ -13,11 +12,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.5",
-    "@astrojs/starlight": "^0.43.1",
-    "astro": "^7.3.6",
-    "sharp": "^0.35.3",
-    "starlight-links-validator": "^0.27.0",
-    "yaml": "^2.9.1"
+    "astro": "^7.3.6"
   },
   "devDependencies": {
     "@mozilla/readability": "^0.6.0",

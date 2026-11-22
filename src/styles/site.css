@@ -1,0 +1,164 @@
+/* One column of links. Light by default, dark by system setting or by the theme buttons. */
+:root {
+	color-scheme: light;
+	--bg: #f8f5ec;
+	--text: #1a1814;
+	--muted: #5e5a4e;
+	--line: #d9d3c2;
+	--accent: #8a4f17;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		color-scheme: dark;
+		--bg: #0f0f0d;
+		--text: #ece7d9;
+		--muted: #a39e8c;
+		--line: #2c2b25;
+		--accent: #e0a45c;
+	}
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	--bg: #0f0f0d;
+	--text: #ece7d9;
+	--muted: #a39e8c;
+	--line: #2c2b25;
+	--accent: #e0a45c;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+html {
+	-webkit-text-size-adjust: 100%;
+}
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC',
+		'Noto Sans CJK TC', sans-serif;
+	font-size: 1.0625rem;
+	line-height: 1.65;
+}
+.bar,
+main {
+	width: min(100% - 2.5rem, 42rem);
+	margin-inline: auto;
+}
+.bar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem 1.5rem;
+	padding-block: 1.25rem;
+	font-size: 0.875rem;
+}
+.langs {
+	display: flex;
+	gap: 1rem;
+}
+.langs [aria-current] {
+	color: var(--muted);
+}
+.themes {
+	display: flex;
+	border: 1px solid var(--line);
+	border-radius: 0.5rem;
+	overflow: hidden;
+}
+.themes button {
+	padding: 0.3rem 0.7rem;
+	border: 0;
+	background: none;
+	color: var(--muted);
+	font: inherit;
+	cursor: pointer;
+}
+.themes button + button {
+	border-inline-start: 1px solid var(--line);
+}
+.themes button:focus-visible {
+	outline-offset: -2px;
+}
+.themes button[aria-pressed='true'] {
+	background: var(--line);
+	color: var(--text);
+}
+main {
+	padding-block: clamp(2rem, 8vh, 5rem) 4rem;
+}
+h1 {
+	margin: 0;
+	font-size: clamp(2.25rem, 7vw, 3.25rem);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+}
+.lead {
+	margin: 1rem 0 0;
+	color: var(--muted);
+}
+section {
+	margin-top: 3rem;
+}
+h2 {
+	margin: 0 0 0.25rem;
+	color: var(--muted);
+	font-size: 0.875rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+.sites {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.sites li {
+	padding-block: 0.9rem;
+	border-top: 1px solid var(--line);
+}
+.sites h3 {
+	margin: 0;
+	font-size: 1.125rem;
+	font-weight: 600;
+}
+.sites p {
+	margin: 0;
+}
+.sites .note {
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+a {
+	color: var(--accent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+}
+a:hover {
+	text-decoration-thickness: 2px;
+}
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 2px;
+}
+code {
+	font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+	font-size: 0.9em;
+}
+.notes ul {
+	margin: 0;
+	padding: 0.9rem 0 0;
+	border-top: 1px solid var(--line);
+	list-style: none;
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+.notes li {
+	padding-block: 0.15rem;
+	overflow-wrap: anywhere;
+}
