@@ -67,6 +67,19 @@ export const SITES = [
 	},
 	{
 		group: 'reference',
+		name: { en: 'Azur Promilia Wiki', 'zh-TW': '藍色星原：旅謠 Wiki' },
+		root: '/azur-promilia-wiki/',
+		sitemap: '/azur-promilia-wiki/sitemap-index.xml',
+		url: { en: '/azur-promilia-wiki/', 'zh-TW': '/azur-promilia-wiki/' },
+		llms: { en: '/azur-promilia-wiki/llms.txt', 'zh-TW': '/azur-promilia-wiki/llms.txt' },
+		languages: ['繁體中文', '简体中文'],
+		about: {
+			en: 'Unofficial reference for the game Azur Promilia (藍色星原：旅謠): characters, Kibo, riding and home work lookups, gacha pity and 靈子',
+			'zh-TW': '遊戲《藍色星原：旅謠》的非官方資料站：角色、奇波、騎乘與家園工作查詢、觀測保底與靈子',
+		},
+	},
+	{
+		group: 'reference',
 		name: { en: 'Stitch 中文教學', 'zh-TW': 'Stitch 中文教學' },
 		root: '/stitch-zh/',
 		sitemap: '/stitch-zh/sitemap-index.xml',
