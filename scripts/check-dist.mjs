@@ -3,8 +3,9 @@
 //
 //  1. Home page, per language: title, a description of its own within the length limit,
 //     canonical, hreflang, a link to its Markdown twin, a link to every site and account,
-//     and all of it, with the caveat, within the first 5,000 characters of the text that
-//     a reader keeping only the main article extracts (Readability, then Turndown).
+//     all of it within the first 5,000 characters of the text that a reader keeping only
+//     the main article extracts (Readability, then Turndown), and no description, caveat
+//     or date in the visible page.
 //  2. Markdown twin, per language: the same links, the caveat, within 5,000 characters.
 //  3. llms.txt, per language: every site with its page list, within 5,000 characters.
 //  4. robots.txt: this site's sitemap, one line per site and no other, the Content-Signal
@@ -81,7 +82,7 @@ for (const locale of LOCALES) {
 	for (const url of targets) {
 		if (!main?.querySelector(`a[href="${url}"]`)) fail(page, `no link to ${url}`);
 	}
-	for (const a of main?.querySelectorAll('section:not(.notes) a[href]') ?? []) {
+	for (const a of main?.querySelectorAll('section a[href]') ?? []) {
 		if (!targets.includes(a.getAttribute('href'))) fail(page, `links ${a.getAttribute('href')}, which is neither in SITES nor in LINKS`);
 	}
 	// What a fetch tool gives an agent: the main article as Markdown, links made absolute.
@@ -91,7 +92,9 @@ for (const locale of LOCALES) {
 	for (const url of [...targets, SITE + mdPath(locale), SITE + llmsPath(locale)]) {
 		if (!extracted.includes(`](${url})`)) fail(page, `extracted text has no link to ${url}`);
 	}
-	if (!extracted.includes(t.caveatValue)) fail(page, 'extracted text lacks the caveat');
+	for (const gone of [t.description, t.caveatValue, VERIFIED]) {
+		if (doc.body.textContent.includes(gone)) fail(page, `the visible page shows text it is meant to leave to the twin: ${gone}`);
+	}
 
 	const md = read(mdPath(locale).slice(1));
 	if (!md) fail(mdPath(locale), 'missing');

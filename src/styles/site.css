@@ -1,4 +1,4 @@
-/* One column of links. Light by default, dark by system setting or by the theme buttons. */
+/* One quiet column of links in a serif face. Light by default, dark by system setting or by the theme buttons. */
 :root {
 	color-scheme: light;
 	--bg: #f8f5ec;
@@ -38,8 +38,8 @@ body {
 	margin: 0;
 	background: var(--bg);
 	color: var(--text);
-	font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC',
-		'Noto Sans CJK TC', sans-serif;
+	font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Source Serif 4', Georgia, 'Songti TC',
+		'Noto Serif TC', 'Noto Serif CJK TC', 'Source Han Serif TC', PMingLiU, serif;
 	font-size: 1.0625rem;
 	line-height: 1.65;
 }
@@ -89,28 +89,27 @@ main {
 	color: var(--text);
 }
 main {
-	padding-block: clamp(2rem, 8vh, 5rem) 4rem;
+	padding-block: clamp(2rem, 10vh, 6rem) 4rem;
 }
 h1 {
 	margin: 0;
-	font-size: clamp(2.25rem, 7vw, 3.25rem);
-	line-height: 1.1;
-	letter-spacing: -0.02em;
-}
-.lead {
-	margin: 1rem 0 0;
-	color: var(--muted);
+	font-size: 1.75rem;
+	font-weight: 400;
+	line-height: 1.2;
 }
 section {
-	margin-top: 3rem;
+	margin-top: 2.75rem;
 }
 h2 {
-	margin: 0 0 0.25rem;
+	margin: 0 0 0.5rem;
 	color: var(--muted);
 	font-size: 0.875rem;
-	font-weight: 600;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
+	font-weight: 400;
+	font-style: italic;
+}
+:lang(zh-TW) h2 {
+	font-style: normal;
+	letter-spacing: 0.1em;
 }
 .sites {
 	margin: 0;
@@ -118,28 +117,31 @@ h2 {
 	list-style: none;
 }
 .sites li {
-	padding-block: 0.9rem;
-	border-top: 1px solid var(--line);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 1rem;
+	padding-block: 0.3rem;
 }
 .sites h3 {
 	margin: 0;
-	font-size: 1.125rem;
-	font-weight: 600;
+	font-size: inherit;
+	font-weight: 400;
 }
 .sites p {
 	margin: 0;
-}
-.sites .note {
 	color: var(--muted);
-	font-size: 0.875rem;
+	font-size: 0.9375rem;
 }
 a {
-	color: var(--accent);
+	color: var(--text);
+	text-decoration-color: var(--line);
 	text-decoration-thickness: 1px;
 	text-underline-offset: 0.2em;
 }
 a:hover {
-	text-decoration-thickness: 2px;
+	color: var(--accent);
+	text-decoration-color: currentColor;
 }
 :focus-visible {
 	outline: 2px solid var(--accent);
@@ -150,15 +152,12 @@ code {
 	font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
 	font-size: 0.9em;
 }
-.notes ul {
-	margin: 0;
-	padding: 0.9rem 0 0;
-	border-top: 1px solid var(--line);
-	list-style: none;
-	color: var(--muted);
-	font-size: 0.875rem;
+.notes {
+	display: flex;
+	gap: 1.25rem;
+	margin: 3.5rem 0 0;
+	font-size: 0.8125rem;
 }
-.notes li {
-	padding-block: 0.15rem;
-	overflow-wrap: anywhere;
+.notes a {
+	color: var(--muted);
 }

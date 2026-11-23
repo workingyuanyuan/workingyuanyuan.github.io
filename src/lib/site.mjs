@@ -35,7 +35,8 @@ export const CRAWLERS = {
  * The sites under this domain, each built and deployed from its own repository. Paths are
  * under DOMAIN. `root` is where the site is served, `sitemap` the sitemap that robots.txt
  * names, `url` the home page a reader of that language should open, `llms` the site's own
- * page list where it has one, `languages` the languages of the site in their own names.
+ * page list where it has one, `brief` the few words the home page shows, `about` the
+ * sentence llms.txt and the structured data give.
  * Add a site here when it is live: the home pages, llms.txt and robots.txt follow.
  */
 export const SITES = [
@@ -46,7 +47,7 @@ export const SITES = [
 		sitemap: '/nte-wiki/sitemap-index.xml',
 		url: { en: '/nte-wiki/', 'zh-TW': '/nte-wiki/zh-tw/' },
 		llms: { en: '/nte-wiki/llms.txt', 'zh-TW': '/nte-wiki/zh-tw/llms.txt' },
-		languages: ['English', '繁體中文', '简体中文'],
+		brief: { en: 'Unofficial reference for Neverness to Everness', 'zh-TW': '《異環》非官方資料站' },
 		about: {
 			en: 'Unofficial reference for the game Neverness to Everness (異環): versions, characters, systems and names',
 			'zh-TW': '遊戲《異環》（Neverness to Everness, NTE）的非官方資料站：版本、角色、系統與名稱對照',
@@ -59,7 +60,7 @@ export const SITES = [
 		sitemap: '/endfield-wiki/sitemap-index.xml',
 		url: { en: '/endfield-wiki/', 'zh-TW': '/endfield-wiki/zh-tw/' },
 		llms: { en: '/endfield-wiki/llms.txt', 'zh-TW': '/endfield-wiki/zh-tw/llms.txt' },
-		languages: ['English', '繁體中文', '简体中文'],
+		brief: { en: 'Unofficial reference for Arknights: Endfield', 'zh-TW': '《明日方舟：終末地》非官方資料站' },
 		about: {
 			en: 'Unofficial reference for the game Arknights: Endfield (global service): versions, operators, systems, AIC factory, recipes and names',
 			'zh-TW': '遊戲《明日方舟：終末地》國際版的非官方資料站：版本、幹員、系統、集成工業、配方與名稱對照',
@@ -72,7 +73,7 @@ export const SITES = [
 		sitemap: '/azur-promilia-wiki/sitemap-index.xml',
 		url: { en: '/azur-promilia-wiki/', 'zh-TW': '/azur-promilia-wiki/' },
 		llms: { en: '/azur-promilia-wiki/llms.txt', 'zh-TW': '/azur-promilia-wiki/llms.txt' },
-		languages: ['繁體中文', '简体中文'],
+		brief: { en: 'Unofficial reference for Azur Promilia', 'zh-TW': '《藍色星原：旅謠》非官方資料站' },
 		about: {
 			en: 'Unofficial reference for the game Azur Promilia (藍色星原：旅謠): characters, Kibo, riding and home work lookups, gacha pity and 靈子',
 			'zh-TW': '遊戲《藍色星原：旅謠》的非官方資料站：角色、奇波、騎乘與家園工作查詢、觀測保底與靈子',
@@ -85,7 +86,7 @@ export const SITES = [
 		sitemap: '/reverse1999-wiki/sitemap-index.xml',
 		url: { en: '/reverse1999-wiki/', 'zh-TW': '/reverse1999-wiki/zh-tw/' },
 		llms: { en: '/reverse1999-wiki/llms.txt', 'zh-TW': '/reverse1999-wiki/zh-tw/llms.txt' },
-		languages: ['English', '繁體中文', '简体中文', '日本語', '한국어'],
+		brief: { en: 'Unofficial reference for Reverse: 1999', 'zh-TW': '《重返未來：1999》非官方資料站' },
 		about: {
 			en: 'Unofficial reference for the game Reverse: 1999 (mainland service, about two versions ahead): every arcanist, kits by rank, Euphoria, materials and summoning pity',
 			'zh-TW': '遊戲《重返未來：1999》的非官方資料站（以約領先兩個版本的中國大陸版為準）：全部神秘學家、技能、狂想、素材與保底',
@@ -98,7 +99,7 @@ export const SITES = [
 		sitemap: '/stitch-zh/sitemap-index.xml',
 		url: { en: '/stitch-zh/', 'zh-TW': '/stitch-zh/' },
 		llms: { en: '/stitch-zh/llms.txt', 'zh-TW': '/stitch-zh/llms.txt' },
-		languages: ['繁體中文'],
+		brief: { en: 'Unofficial guide to Google Stitch', 'zh-TW': 'Google Stitch 非官方教學' },
 		about: {
 			en: 'Unofficial guide to Google Stitch: the web app, CLI, MCP, SDK, DESIGN.md and Agent Skills',
 			'zh-TW': 'Google Stitch 的非官方教學：網頁版入門、CLI、MCP、SDK、DESIGN.md 與 Agent Skills',
@@ -111,7 +112,7 @@ export const SITES = [
 		sitemap: '/tw-hs-contests/sitemap-index.xml',
 		url: { en: '/tw-hs-contests/', 'zh-TW': '/tw-hs-contests/' },
 		llms: { en: '/tw-hs-contests/llms.txt', 'zh-TW': '/tw-hs-contests/llms.txt' },
-		languages: ['繁體中文'],
+		brief: { en: 'Competitions for high school students in Taiwan', 'zh-TW': '臺灣高中職學生可報名的比賽' },
 		about: {
 			en: 'Directory of competitions that high school students in Taiwan can enter',
 			'zh-TW': '臺灣高中職學生可以報名的比賽目錄',
@@ -124,7 +125,7 @@ export const SITES = [
 		sitemap: '/github-repositories/sitemap-index.xml',
 		url: { en: '/github-repositories/', 'zh-TW': '/github-repositories/zh-tw/' },
 		llms: { en: '/github-repositories/llms.txt', 'zh-TW': '/github-repositories/zh-tw/llms.txt' },
-		languages: ['English', '繁體中文'],
+		brief: { en: 'Notes on my public repositories', 'zh-TW': '公開專案的介紹' },
 		about: {
 			en: `What each public GitHub repository of ${NAME} is, how to install and use it, and what to watch out for`,
 			'zh-TW': `${NAME} 的每個公開 GitHub 專案是什麼、如何安裝與使用、要注意什麼`,
@@ -136,6 +137,7 @@ export const SITES = [
 		root: '/Kage/',
 		sitemap: '/Kage/sitemap.xml',
 		url: { en: '/Kage/', 'zh-TW': '/Kage/' },
+		brief: { en: 'Agent skill for dark HTML documents', 'zh-TW': '排版暗色 HTML 文件的 agent skill' },
 		about: {
 			en: 'Agent skill that typesets a brief into a dark, screen-only HTML document',
 			'zh-TW': '把需求排版成暗色、僅供螢幕閱讀的 HTML 文件的 agent skill',
@@ -147,6 +149,7 @@ export const SITES = [
 		root: '/Frontier-Model-Doh-Choo-choo/',
 		sitemap: '/Frontier-Model-Doh-Choo-choo/sitemap.xml',
 		url: { en: '/Frontier-Model-Doh-Choo-choo/', 'zh-TW': '/Frontier-Model-Doh-Choo-choo/' },
+		brief: { en: 'Frontier models by capability and cost', 'zh-TW': '前沿模型的能力與成本比較' },
 		about: {
 			en: 'Dashboard comparing frontier language models on capability and cost',
 			'zh-TW': '比較前沿語言模型能力與成本的儀表板',
@@ -158,6 +161,7 @@ export const SITES = [
 		root: '/iphone-18-pro-teardown/',
 		sitemap: '/iphone-18-pro-teardown/sitemap.xml',
 		url: { en: '/iphone-18-pro-teardown/', 'zh-TW': '/iphone-18-pro-teardown/' },
+		brief: { en: 'Interactive 3D teardown', 'zh-TW': '互動式 3D 拆解' },
 		about: {
 			en: 'Interactive 3D teardown of the iPhone 18 Pro, for education',
 			'zh-TW': '教育用途的 iPhone 18 Pro 互動式 3D 拆解網頁',
@@ -169,6 +173,7 @@ export const SITES = [
 		root: '/Pixel-Kitten-Town-Class/',
 		sitemap: '/Pixel-Kitten-Town-Class/sitemap.xml',
 		url: { en: '/Pixel-Kitten-Town-Class/', 'zh-TW': '/Pixel-Kitten-Town-Class/' },
+		brief: { en: 'Classroom rewards, one cat per student', 'zh-TW': '學生化身貓咪的課堂獎勵' },
 		about: {
 			en: 'Classroom reward page where each student is a cat that levels up',
 			'zh-TW': '每位學生化身為升級貓咪的課堂獎勵網頁',
@@ -180,6 +185,7 @@ export const SITES = [
 		root: '/simple-gemini-public/',
 		sitemap: '/simple-gemini-public/sitemap.xml',
 		url: { en: '/simple-gemini-public/', 'zh-TW': '/simple-gemini-public/' },
+		brief: { en: 'Chrome extension that summarises selected text', 'zh-TW': '摘要選取文字的 Chrome 擴充功能' },
 		about: {
 			en: 'Landing page of a Chrome extension that summarises selected text',
 			'zh-TW': '摘要選取文字的 Chrome 擴充功能的落地頁',
@@ -191,6 +197,7 @@ export const SITES = [
 		root: '/BiliGemi-public/',
 		sitemap: '/BiliGemi-public/sitemap.xml',
 		url: { en: '/BiliGemi-public/', 'zh-TW': '/BiliGemi-public/' },
+		brief: { en: 'Chrome extension that summarises Bilibili videos', 'zh-TW': '摘要 Bilibili 影片的 Chrome 擴充功能' },
 		about: {
 			en: 'Landing page of a Chrome extension that summarises Bilibili video subtitles and comments',
 			'zh-TW': '摘要 Bilibili 影片字幕與觀眾評論的 Chrome 擴充功能的落地頁',
@@ -206,6 +213,7 @@ export const LINKS = [
 	{
 		name: { en: 'GitHub', 'zh-TW': 'GitHub' },
 		url: `https://github.com/${GITHUB_USER}`,
+		brief: { en: 'Source code', 'zh-TW': '原始碼' },
 		about: { en: 'Source code of the sites and projects', 'zh-TW': '各網站與專案的原始碼' },
 	},
 ];
@@ -217,7 +225,6 @@ export const TEXT = {
 		description: `Index of the websites that ${NAME} (GitHub account ${GITHUB_USER}) publishes under yuanaruru.com.`,
 		groups: { reference: 'Reference sites', project: 'Project sites' },
 		links: 'Elsewhere',
-		notes: 'About this page',
 		languages: 'Languages',
 		sep: ', ',
 		colon: ': ',
@@ -253,7 +260,6 @@ export const TEXT = {
 		description: `${NAME}（GitHub 帳號 ${GITHUB_USER}）在 yuanaruru.com 發布的所有網站。`,
 		groups: { reference: '資料網站', project: '專案網站' },
 		links: '其他平台',
-		notes: '關於本頁',
 		languages: '語言',
 		sep: '、',
 		colon: '：',

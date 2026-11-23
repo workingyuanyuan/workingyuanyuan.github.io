@@ -59,7 +59,6 @@ const jsonLd = {
 		</header>
 		<main>
 			<h1 translate="no">{NAME}</h1>
-			<p class="lead">{t.description}</p>
 			{
 				GROUPS.map((group) => (
 					<section>
@@ -68,8 +67,7 @@ const jsonLd = {
 							{SITES.filter((s) => s.group === group).map((s) => (
 								<li>
 									<h3><a href={siteUrl(s, lang)}>{s.name[lang]}</a></h3>
-									<p>{s.about[lang]}{t.stop}</p>
-									{s.languages && <p class="note">{t.languages}{t.colon}{s.languages.join(t.sep)}{t.stop}</p>}
+									<p>{s.brief[lang]}</p>
 								</li>
 							))}
 						</ul>
@@ -82,20 +80,15 @@ const jsonLd = {
 					{LINKS.map((l) => (
 						<li>
 							<h3><a href={l.url}>{l.name[lang]}</a></h3>
-							<p>{l.about[lang]}{t.stop}</p>
+							<p>{l.brief[lang]}</p>
 						</li>
 					))}
 				</ul>
 			</section>
-			<section class="notes">
-				<h2>{t.notes}</h2>
-				<ul role="list">
-					<li>{t.caveat}{t.colon}{t.caveatValue}</li>
-					<li>{t.verified}{t.colon}<time datetime={VERIFIED}>{VERIFIED}</time></li>
-					<li>{t.markdown}{t.colon}<a href={mdPath(locale)}>{SITE + mdPath(locale)}</a></li>
-					<li>{t.siteList}{t.colon}<a href={llmsPath(locale)}>{SITE + llmsPath(locale)}</a></li>
-				</ul>
-			</section>
+			<p class="notes">
+				<a href={mdPath(locale)}>{t.markdown}</a>
+				<a href={llmsPath(locale)}>llms.txt</a>
+			</p>
 		</main>
 	</body>
 </html>

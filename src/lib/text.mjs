@@ -4,12 +4,8 @@ import {
 	DOMAIN, SITE, NAME, VERIFIED, LOCALES, SITES, LINKS, GROUPS, TEXT, homePath, mdPath, llmsPath, siteUrl,
 } from './site.mjs';
 
-/** One line per site: `- [name](url): about. Languages: a, b.` */
-function siteLine(site, lang) {
-	const t = TEXT[lang];
-	const languages = site.languages ? `${lang === 'en' ? ' ' : ''}${t.languages}${t.colon}${site.languages.join(t.sep)}${t.stop}` : '';
-	return `- [${site.name[lang]}](${siteUrl(site, lang)})${t.colon}${site.about[lang]}${t.stop}${languages}`;
-}
+/** One line per site or account: `- [name](url): brief` */
+const line = (item, url, lang) => `- [${item.name[lang]}](${url})${TEXT[lang].colon}${item.brief[lang]}`;
 
 /** Markdown twin of the home page: `/index.md`, `/zh-tw.md`. */
 export function homeMarkdown(locale) {
@@ -30,10 +26,10 @@ export function homeMarkdown(locale) {
 		'---',
 		...GROUPS.flatMap((group) => [
 			`## ${t.groups[group]}`,
-			SITES.filter((s) => s.group === group).map((s) => siteLine(s, lang)).join('\n'),
+			SITES.filter((s) => s.group === group).map((s) => line(s, siteUrl(s, lang), lang)).join('\n'),
 		]),
 		`## ${t.links}`,
-		LINKS.map((l) => `- [${l.name[lang]}](${l.url})${t.colon}${l.about[lang]}${t.stop}`).join('\n'),
+		LINKS.map((l) => line(l, l.url, lang)).join('\n'),
 	].join('\n\n') + '\n';
 }
 
