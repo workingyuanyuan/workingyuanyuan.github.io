@@ -80,6 +80,19 @@ export const SITES = [
 	},
 	{
 		group: 'reference',
+		name: { en: 'Reverse: 1999 Wiki', 'zh-TW': '重返未來：1999 Wiki' },
+		root: '/reverse1999-wiki/',
+		sitemap: '/reverse1999-wiki/sitemap-index.xml',
+		url: { en: '/reverse1999-wiki/', 'zh-TW': '/reverse1999-wiki/zh-tw/' },
+		llms: { en: '/reverse1999-wiki/llms.txt', 'zh-TW': '/reverse1999-wiki/zh-tw/llms.txt' },
+		languages: ['English', '繁體中文', '简体中文', '日本語', '한국어'],
+		about: {
+			en: 'Unofficial reference for the game Reverse: 1999 (mainland service, about two versions ahead): every arcanist, kits by rank, Euphoria, materials and summoning pity',
+			'zh-TW': '遊戲《重返未來：1999》的非官方資料站（以約領先兩個版本的中國大陸版為準）：全部神秘學家、技能、狂想、素材與保底',
+		},
+	},
+	{
+		group: 'reference',
 		name: { en: 'Stitch 中文教學', 'zh-TW': 'Stitch 中文教學' },
 		root: '/stitch-zh/',
 		sitemap: '/stitch-zh/sitemap-index.xml',
